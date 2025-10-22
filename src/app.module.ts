@@ -12,8 +12,8 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    UsersModule,
     DatabaseModule,
+    UsersModule,
     EmployeesModule,
     JobPostModule,
     ThrottlerModule.forRoot([

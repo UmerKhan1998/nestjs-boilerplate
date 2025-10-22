@@ -47,7 +47,7 @@ export class JobPostController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.jobPostService.findOne(+id);
+    return this.jobPostService.findOne(id);
   }
 
   @Patch(':id')
@@ -56,11 +56,11 @@ export class JobPostController {
     @Param('id') id: string,
     @Body() updateJobPostDto: Prisma.JobPostingAdminUpdateInput,
   ) {
-    return this.jobPostService.update(+id, updateJobPostDto, token);
+    return this.jobPostService.update(id, updateJobPostDto, token);
   }
 
   @Delete(':id')
   remove(@Headers('token') token: string, @Param('id') id: string) {
-    return this.jobPostService.remove(+id, token);
+    return this.jobPostService.remove(id, token);
   }
 }

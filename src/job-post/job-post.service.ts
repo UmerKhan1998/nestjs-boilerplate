@@ -77,7 +77,7 @@ export class JobPostService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     return this.databaseService.jobPostingAdmin.findUnique({
       where: {
         id,
@@ -86,7 +86,7 @@ export class JobPostService {
   }
 
   async update(
-    id: number,
+    id: string,
     updateJobPostDto: Prisma.JobPostingAdminUpdateInput,
     token: string,
   ) {
@@ -105,7 +105,7 @@ export class JobPostService {
     });
   }
 
-  async remove(id: number, token: string) {
+  async remove(id: string, token: string) {
     const decoded: any = jwt.decode(token);
     const adminEmail = decoded?.adminUserData?.email;
 
