@@ -18,21 +18,7 @@ export class AuthService {
     const { email, password, firstName, lastName } = registerDto;
 
     const existing = await this.db.candidate.findUnique({ where: { email } });
-    if (existing) throw new ConflictException('Email already registered');
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const candidate = await this.db.candidate.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-      },
-    });
-
-    const token = this.generateToken(candidate.id, candidate.email);
-    return { candidate, token };
+    console.log('existing', existing);
   }
 
   async login(loginDto: LoginDto) {
