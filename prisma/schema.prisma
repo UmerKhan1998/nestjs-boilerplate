@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model JobPostingAdmin {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  jobTitle       String
+  slug           String    @unique
+  jobDescription String
+  jobLocation    String
+  jobType        String
+  status         JobStatus
+  expReq         Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+enum JobStatus {
+  Pending
+  Approved
+  Rejected
+  Closed
+  Open
+  Deleted
+  Cancelled
+  Expired
+  Published
+}
+
+model Employee {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  INTERN
+  ENGINEER
+  ADMIN
+}
+
+model Candidate {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  createdAt DateTime @default(now())
+}
