@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
+import { generateTokens } from 'utils/token';
 
 @Injectable()
 export class AuthService {
@@ -33,18 +34,22 @@ export class AuthService {
       username,
       email,
       password: hashedPassword,
+      refreshToken: '',
     });
+
+    const { accessToken, refreshToken } = generateTokens(
+      newUser?._id?.toString(),
+    );
+
+    newUser['refreshToken'] = refreshToken;
 
     await newUser.save();
 
     // ✅ Return safe response (without password)
     return {
+      success: true,
       message: 'User registered successfully',
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-      },
+      accessToken,
     };
   }
 

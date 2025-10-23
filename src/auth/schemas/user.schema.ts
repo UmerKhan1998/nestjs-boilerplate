@@ -11,6 +11,9 @@ export class User extends Document {
 
   @Prop({ required: true, unique: true })
   email: string;
+
+  @Prop({ required: true, unique: true })
+  refreshToken: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
