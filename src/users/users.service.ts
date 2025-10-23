@@ -49,7 +49,7 @@ export class UsersService {
   }
 
   findOne(id: string) {
-    const user = this.users.find((user) => user.id === (+id));
+    const user = this.users.find((user) => user.id === +id);
 
     if (!user) throw new NotFoundException('User Not Found');
 
@@ -68,7 +68,7 @@ export class UsersService {
 
   update(id: string, updateUserDto: UpdateUserDto) {
     this.users = this.users.map((user) => {
-      if (user.id === (+id)) {
+      if (user.id === +id) {
         return { ...user, ...updateUserDto };
       }
       return user;
@@ -80,7 +80,7 @@ export class UsersService {
   delete(id: string) {
     const removedUser = this.findOne(id);
 
-    this.users = this.users.filter((user) => user.id !== (+id));
+    this.users = this.users.filter((user) => user.id !== +id);
 
     return removedUser;
   }
