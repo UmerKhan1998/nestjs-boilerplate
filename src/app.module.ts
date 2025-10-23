@@ -29,8 +29,8 @@ import { AuthModule } from './auth/auth.module';
         limit: 100,
       },
     ]),
-    MyLoggerModule,
     AuthModule,
+    MyLoggerModule,
   ],
   controllers: [AppController],
   providers: [

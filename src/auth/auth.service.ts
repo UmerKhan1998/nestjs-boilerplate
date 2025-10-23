@@ -1,16 +1,24 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private jwtService: JwtService,
+  ) {}
 
-  async create(createAuthDto: CreateAuthDto) {
+  async register(createAuthDto: CreateAuthDto) {
     const { username, email, password } = createAuthDto;
 
     // 🔍 Check for existing user
@@ -44,19 +52,29 @@ export class AuthService {
     };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async login(createAuthDto: CreateAuthDto) {
+    const { email, password } = createAuthDto;
+
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Invalid credentials');
+
+    // // 🧾 Generate JWT
+    // const payload = user; // Simplified for this example
+    // const token = await this.jwtService.signAsync(user);
+    // console.log('User logged in successfully:', token);
+
+    return {
+      message: 'Login successful',
+      user: user,
+      // access_token: token,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async validateUser(payload: any) {
+    return this.userModel.findById(payload._id).select('-password');
   }
 }
