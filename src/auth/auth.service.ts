@@ -9,14 +9,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
-    private jwtService: JwtService,
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async register(createAuthDto: CreateAuthDto) {
     const { username, email, password } = createAuthDto;
