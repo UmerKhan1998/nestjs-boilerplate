@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -9,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { generateTokens } from 'utils/token';
 
 @Injectable()
@@ -37,9 +40,13 @@ export class AuthService {
       refreshToken: '',
     });
 
-    const { accessToken, refreshToken } = generateTokens(
-      newUser?._id?.toString(),
-    );
+    console.log('newUser', newUser);
+
+    const { accessToken, refreshToken } = generateTokens({
+      id: newUser?._id?.toString(),
+      username: newUser?.username,
+      email: newUser?.email,
+    });
 
     newUser['refreshToken'] = refreshToken;
 
@@ -73,9 +80,11 @@ export class AuthService {
     if (!isPasswordValid)
       throw new UnauthorizedException('Invalid credentials');
 
-    const { accessToken, refreshToken } = generateTokens(
-      newUser?._id?.toString(),
-    );
+    const { accessToken, refreshToken } = generateTokens({
+      id: newUser?._id?.toString(),
+      username: newUser?.username,
+      email: newUser?.email,
+    });
 
     newUser['refreshToken'] = refreshToken;
 
@@ -95,8 +104,58 @@ export class AuthService {
     return {
       success: true,
       message: 'Login successful',
-      user: accessToken,
+      accessToken,
     };
+  }
+
+  async refresh(req, res) {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+
+      if (!refreshToken) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'No refresh token or invalid refresh token provided',
+          },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const decoded: any = jwt.verify(
+        refreshToken,
+        process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
+      );
+
+      const user = await this.userModel.findById(decoded.user?.id);
+
+      // Rotate tokens
+      const { accessToken, refreshToken: newRefreshToken } = generateTokens({
+        id: user?._id?.toString(),
+        username: user?.username,
+        email: user?.email,
+      });
+
+      await this.userModel.findByIdAndUpdate(user?._id, {
+        refreshToken: newRefreshToken,
+      });
+
+      // ✅ Use cookie-parser globally, Nest will handle response
+      req.res?.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return { success: true, accessToken };
+    } catch (error) {
+      console.error('Refresh token error:', error);
+      throw new HttpException(
+        { success: false, message: 'Invalid or expired refresh token' },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
   }
 
   async validateUser(payload: any) {

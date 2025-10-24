@@ -2,7 +2,7 @@ import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
 interface TokenPayload {
-  userId: string | number;
+  user: string | number;
 }
 
 interface GeneratedTokens {
@@ -11,11 +11,11 @@ interface GeneratedTokens {
   jti: string;
 }
 
-export const generateTokens = (userId: any): GeneratedTokens => {
+export const generateTokens = (user: any): GeneratedTokens => {
   const jti = uuidv4(); // Unique token ID
 
   const accessToken = jwt.sign(
-    { userId } as TokenPayload,
+    { user } as TokenPayload,
     process.env.JWT_SECRET || 'fallback-secret',
     {
       expiresIn: '15m',
@@ -24,7 +24,7 @@ export const generateTokens = (userId: any): GeneratedTokens => {
   );
 
   const refreshToken = jwt.sign(
-    { userId } as TokenPayload,
+    { user } as TokenPayload,
     process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
     { expiresIn: '7d' },
   );

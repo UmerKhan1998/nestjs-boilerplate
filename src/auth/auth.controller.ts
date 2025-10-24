@@ -36,6 +36,15 @@ export class AuthController {
     return this.authService.login(createAuthDto, res, req);
   }
 
+  @Post('refresh')
+  refresh(
+    @Body() createAuthDto: CreateAuthDto,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    return this.authService.refresh(req, res);
+  }
+
   // 🛡️ Protected route example
   @Get('profile')
   getProfile(@Request() req) {
