@@ -1,22 +1,15 @@
 import {
   Catch,
   ArgumentsHost,
-  HttpStatus,
   HttpException,
+  HttpStatus,
+  ExceptionFilter,
 } from '@nestjs/common';
-import { BaseExceptionFilter } from '@nestjs/core';
 import { Request, Response } from 'express';
 import { MyLoggerService } from './my-logger/my-logger.service';
 
-type MyResponseObj = {
-  statusCode: number;
-  timestamp: string;
-  path: string;
-  response: string | object;
-};
-
 @Catch()
-export class AllExceptionsFilter extends BaseExceptionFilter {
+export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new MyLoggerService(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
@@ -24,25 +17,40 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const myResponseObj: MyResponseObj = {
-      statusCode: 500,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      response: '',
-    };
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message: string | object = 'Internal server error';
 
+    // ✅ Handle known NestJS HTTP exceptions
     if (exception instanceof HttpException) {
-      myResponseObj.statusCode = exception.getStatus();
-      myResponseObj.response = exception.getResponse();
-    } else {
-      myResponseObj.statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-      myResponseObj.response = 'Internal Server Error';
+      status = exception.getStatus();
+      const res = exception.getResponse();
+
+      // Sometimes `getResponse()` returns a string, sometimes an object
+      message = typeof res === 'string' ? res : (res as any).message || res;
+    } else if (exception instanceof Error) {
+      // ✅ Capture unexpected JS errors (runtime, DB, etc.)
+      message = exception.message;
     }
 
-    response.status(myResponseObj.statusCode).json(myResponseObj);
+    // ✅ Structured response object
+    const errorResponse = {
+      success: false,
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      method: request.method,
+      message,
+    };
 
-    this.logger.error(myResponseObj.response, AllExceptionsFilter.name);
+    // ✅ Log with stack trace for internal debugging
+    this.logger.error(
+      `❌ [${request.method}] ${request.url} → ${JSON.stringify(message)}`,
+      exception instanceof Error ? exception.stack : undefined,
+    );
 
-    super.catch(exception, host);
+    // ✅ Send only once (no super.catch() to avoid double response)
+    if (!response.headersSent) {
+      response.status(status).json(errorResponse);
+    }
   }
 }

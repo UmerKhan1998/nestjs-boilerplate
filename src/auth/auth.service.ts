@@ -161,34 +161,87 @@ export class AuthService {
 
   async logout(req, res) {
     try {
-      const token = req.headers?.token;
+      // ✅ Extract Bearer token from Authorization header
+      const authHeader = req.headers['authorization'];
+      const token = authHeader?.split(' ')[1];
 
+      if (!token) {
+        return res
+          .status(HttpStatus.UNAUTHORIZED)
+          .json({ success: false, message: 'No token provided' });
+      }
+
+      // ✅ Verify token
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET,
       ) as jwt.JwtPayload;
 
-      if (decoded.jti) {
+      // ✅ Add token jti to blacklist
+      if (decoded?.jti) {
         addToBlacklist(decoded.jti);
       } else {
         throw new UnauthorizedException('Invalid token payload');
       }
 
-      res?.clearCookie('refreshToken', '', {
+      // ✅ Clear the refresh token cookie
+      res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 0,
       });
-      return { message: 'Logout successful' };
+
+      // ✅ Send success message
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: 'Logout successful. Token has been blacklisted.',
+      });
     } catch (error) {
-      console.error('Refresh token error:', error);
-      throw new HttpException(
-        { success: false, message: 'Invalid or expired refresh token' },
-        HttpStatus.UNAUTHORIZED,
-      );
+      console.error('Logout error:', error.message);
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        message: 'Invalid or expired token',
+      });
     }
   }
+  // async logout(req, res) {
+  //   try {
+  //     const token = req.headers['authorization']?.split(' ')[1]; // Bearer <token>
+
+  //     if (!token) {
+  //       throw new UnauthorizedException('No token provided');
+  //     }
+
+  //     const decoded = jwt.verify(
+  //       token,
+  //       process.env.JWT_SECRET,
+  //     ) as jwt.JwtPayload;
+
+  //     if (!decoded?.jti) {
+  //       throw new UnauthorizedException('Invalid token payload');
+  //     }
+
+  //     addToBlacklist(decoded.jti);
+
+  //     // ❌ Clear refresh token cookie (if used)
+  //     res.clearCookie('refreshToken', {
+  //       httpOnly: true,
+  //       secure: process.env.NODE_ENV === 'production',
+  //       sameSite: 'strict',
+  //     });
+
+  //     return res.status(200).json({
+  //       success: true,
+  //       message: 'Logout successful. Token has been expired.',
+  //     });
+  //   } catch (error) {
+  //     console.error('Refresh token error:', error);
+  //     throw new HttpException(
+  //       { success: false, message: 'Invalid or expired refresh token' },
+  //       HttpStatus.UNAUTHORIZED,
+  //     );
+  //   }
+  // }
 
   // // ✅ Logout: blacklist the refresh token
   // async logout(token: string) {

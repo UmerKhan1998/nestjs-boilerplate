@@ -8,8 +8,7 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  const { httpAdapter } = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.enableCors({
     origin: ['http://localhost:3000'], // your frontend URL
