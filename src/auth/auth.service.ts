@@ -13,6 +13,7 @@ import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { generateTokens } from 'utils/token';
+import { addToBlacklist, isBlacklisted } from 'utils/tokenBlacklist';
 
 @Injectable()
 export class AuthService {
@@ -158,7 +159,54 @@ export class AuthService {
     }
   }
 
-  async validateUser(payload: any) {
-    return this.userModel.findById(payload._id).select('-password');
+  async logout(req, res) {
+    try {
+      const token = req.headers?.token;
+
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET,
+      ) as jwt.JwtPayload;
+
+      if (decoded.jti) {
+        addToBlacklist(decoded.jti);
+      } else {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      res?.clearCookie('refreshToken', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 0,
+      });
+      return { message: 'Logout successful' };
+    } catch (error) {
+      console.error('Refresh token error:', error);
+      throw new HttpException(
+        { success: false, message: 'Invalid or expired refresh token' },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
   }
+
+  // // ✅ Logout: blacklist the refresh token
+  // async logout(token: string) {
+  //   try {
+  //     const decoded = jwt.verify(
+  //       token,
+  //       process.env.JWT_REFRESH_SECRET,
+  //     ) as jwt.JwtPayload;
+
+  //     if (decoded.jti) {
+  //       addToBlacklist(decoded.jti);
+  //     } else {
+  //       throw new UnauthorizedException('Invalid token payload');
+  //     }
+
+  //     return { message: 'Logout successful' };
+  //   } catch (err) {
+  //     throw new UnauthorizedException('Invalid or expired token');
+  //   }
+  // }
 }

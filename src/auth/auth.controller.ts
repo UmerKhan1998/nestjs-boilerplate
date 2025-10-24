@@ -10,6 +10,7 @@ import {
   Request,
   Res,
   Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -23,6 +24,7 @@ export class AuthController {
   @Post('register')
   register(
     @Body() createAuthDto: CreateAuthDto,
+
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.register(createAuthDto, res);
@@ -44,6 +46,11 @@ export class AuthController {
     @Req() req: Request,
   ) {
     return this.authService.refresh(req, res);
+  }
+
+  @Post('logout')
+  logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.authService.logout(req, res);
   }
 
   // 🛡️ Protected route example
